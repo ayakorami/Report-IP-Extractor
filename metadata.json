@@ -1,0 +1,5 @@
+{
+  "name": "Report IP Extractor",
+  "description": "An advanced IP extraction tool for parsing log files, featuring automated deduplication and statistical aggregation for efficient traffic analysis.",
+  "requestFramePermissions": []
+}
