@@ -6,9 +6,11 @@ import { StatsTable } from './components/StatsTable';
 
 const App: React.FC = () => {
   const [drops, setDrops] = useState<Drop[]>([]);
+  const [fileName, setFileName] = useState<string>('');
   const [activeView, setActiveView] = useState<ViewMode>(ViewMode.DROPS);
 
-  const parseFile = useCallback((content: string) => {
+  const parseFile = useCallback((content: string, name: string) => {
+    setFileName(name);
     const lines = content.split(/\r?\n/);
     const newDrops: Drop[] = [];
     let currentDrop: Drop | null = null;
@@ -71,6 +73,24 @@ const App: React.FC = () => {
     const sortedStats = [...globalStats].sort((a, b) => b.count - a.count);
     const maxCount = Math.max(...globalStats.map(s => s.count), 1);
     
+    // Logic to get the first word of the filename and formatted date
+    const baseName = fileName.replace(/\.[^/.]+$/, "");
+    const firstWord = baseName.split(/[\s_-]/)[0] || 'Report';
+    
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    
+    // Display timestamp with slashes
+    const formattedTimestamp = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+    
+    // Filename date with dots or dashes (slashes are illegal in filenames)
+    const fileSafeDate = `${day}.${month}.${year}`;
+
     const htmlReport = `
 <!DOCTYPE html>
 <html lang="en">
@@ -100,7 +120,7 @@ const App: React.FC = () => {
             <h1 class="text-4xl font-extrabold text-slate-900 mb-2 tracking-tight">
                 Report IP <span class="text-indigo-600">Extractor</span>
             </h1>
-            <p class="text-slate-500 text-lg">Analyzed report from ${new Date().toLocaleString()}</p>
+            <p class="text-slate-500 text-lg">Analyzed report from ${firstWord} ${formattedTimestamp}</p>
         </header>
 
         <!-- Navigation Buttons -->
@@ -265,7 +285,10 @@ const App: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `ip_extraction_report.html`;
+    
+    // Set requested filename format: [FirstWord]_report_IpsExtractor_dd.mm.yyyy.html
+    a.download = `${firstWord}_report_IpsExtractor_${fileSafeDate}.html`;
+    
     a.click();
     URL.revokeObjectURL(url);
   };

@@ -2,7 +2,7 @@
 import React, { useRef } from 'react';
 
 interface FileUploadProps {
-  onFileLoaded: (content: string) => void;
+  onFileLoaded: (content: string, fileName: string) => void;
   isLoading: boolean;
 }
 
@@ -13,10 +13,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileLoaded, isLoading 
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const fileName = file.name;
     const reader = new FileReader();
     reader.onload = (event) => {
       const text = event.target?.result as string;
-      onFileLoaded(text);
+      onFileLoaded(text, fileName);
     };
     reader.readAsText(file);
   };
