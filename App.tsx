@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { Drop, GlobalStats, ViewMode } from './types';
-import { FileUpload } from './components/FileUpload';
-import { DropCard } from './components/DropCard';
-import { StatsTable } from './components/StatsTable';
+import { Drop, GlobalStats, ViewMode } from './types.ts';
+import { FileUpload } from './components/FileUpload.tsx';
+import { DropCard } from './components/DropCard.tsx';
+import { StatsTable } from './components/StatsTable.tsx';
 
 const App: React.FC = () => {
   const [drops, setDrops] = useState<Drop[]>([]);
@@ -73,7 +73,6 @@ const App: React.FC = () => {
     const sortedStats = [...globalStats].sort((a, b) => b.count - a.count);
     const maxCount = Math.max(...globalStats.map(s => s.count), 1);
     
-    // Logic to get the first word of the filename and formatted date
     const baseName = fileName.replace(/\.[^/.]+$/, "");
     const firstWord = baseName.split(/[\s_-]/)[0] || 'Report';
     
@@ -85,10 +84,7 @@ const App: React.FC = () => {
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const seconds = String(now.getSeconds()).padStart(2, '0');
     
-    // Display timestamp with slashes
     const formattedTimestamp = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
-    
-    // Filename date with dots or dashes (slashes are illegal in filenames)
     const fileSafeDate = `${day}.${month}.${year}`;
 
     const htmlReport = `
@@ -123,7 +119,6 @@ const App: React.FC = () => {
             <p class="text-slate-500 text-lg">Analyzed report from ${firstWord} ${formattedTimestamp}</p>
         </header>
 
-        <!-- Navigation Buttons -->
         <div class="flex flex-col md:flex-row items-center justify-center gap-4 mb-8 no-print">
             <div class="flex items-center justify-start bg-white p-2 rounded-2xl shadow-sm border border-slate-100 gap-2 w-full md:w-auto">
                 <button id="btn-drops" onclick="showTab('drops')" 
@@ -137,7 +132,6 @@ const App: React.FC = () => {
             </div>
         </div>
 
-        <!-- DROPS VIEW -->
         <div id="drops-view" class="animate-in fade-in duration-300">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 ${drops.map(drop => `
@@ -168,7 +162,6 @@ const App: React.FC = () => {
             </div>
         </div>
 
-        <!-- STATS VIEW -->
         <div id="stats-view" class="hidden animate-in fade-in duration-300">
             <div class="page-break"></div>
             <div class="bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden">
@@ -183,9 +176,6 @@ const App: React.FC = () => {
                                 oninput="filterStats(this.value)"
                                 class="pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none w-full md:w-64 transition-all"
                             />
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
                         </div>
                     </div>
                 </div>
@@ -195,28 +185,14 @@ const App: React.FC = () => {
                             <tr class="bg-slate-50 text-slate-500 text-xs font-bold uppercase tracking-wider">
                                 <th class="px-6 py-4">IP Address / Value</th>
                                 <th class="px-6 py-4 text-right">Occurrences</th>
-                                <th class="px-6 py-4 text-right">Prevalence</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100" id="stats-body">
-                            ${sortedStats.map(item => {
-                                const percentage = (item.count / maxCount) * 100;
-                                return `
+                            ${sortedStats.map(item => `
                                 <tr class="stats-row">
                                     <td class="px-6 py-4 font-mono text-slate-700 font-medium value-cell">${item.value}</td>
                                     <td class="px-6 py-4 text-right font-semibold text-indigo-600">${item.count}</td>
-                                    <td class="px-6 py-4 w-48">
-                                        <div class="flex items-center justify-end">
-                                            <div class="w-full bg-slate-100 rounded-full h-2 max-w-[100px]">
-                                                <div class="bg-indigo-500 h-2 rounded-full" style="width: ${Math.max(percentage, 5)}%"></div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>`;
-                            }).join('')}
-                            <tr id="no-results" class="hidden">
-                                <td colspan="3" class="px-6 py-12 text-center text-slate-400">No matches found</td>
-                            </tr>
+                                </tr>`).join('')}
                         </tbody>
                     </table>
                 </div>
@@ -234,48 +210,33 @@ const App: React.FC = () => {
             const statsView = document.getElementById('stats-view');
             const btnDrops = document.getElementById('btn-drops');
             const btnStats = document.getElementById('btn-stats');
-
-            const activeBtn = ['bg-indigo-600', 'text-white', 'shadow-indigo-200', 'shadow-lg'];
-            const inactiveBtn = ['text-slate-600', 'hover:bg-slate-50'];
+            const active = ['bg-indigo-600', 'text-white', 'shadow-indigo-200', 'shadow-lg'];
+            const inactive = ['text-slate-600', 'hover:bg-slate-50'];
 
             if (view === 'drops') {
                 dropsView.classList.remove('hidden');
                 statsView.classList.add('hidden');
-                btnDrops.classList.add(...activeBtn);
-                btnDrops.classList.remove(...inactiveBtn);
-                btnStats.classList.add(...inactiveBtn);
-                btnStats.classList.remove(...activeBtn);
+                btnDrops.classList.add(...active);
+                btnDrops.classList.remove(...inactive);
+                btnStats.classList.add(...inactive);
+                btnStats.classList.remove(...active);
             } else {
                 dropsView.classList.add('hidden');
                 statsView.classList.remove('hidden');
-                btnStats.classList.add(...activeBtn);
-                btnStats.classList.remove(...inactiveBtn);
-                btnDrops.classList.add(...inactiveBtn);
-                btnDrops.classList.remove(...activeBtn);
+                btnStats.classList.add(...active);
+                btnStats.classList.remove(...inactive);
+                btnDrops.classList.add(...inactive);
+                btnDrops.classList.remove(...active);
             }
         }
 
         function filterStats(query) {
             const lowerQuery = query.toLowerCase();
             const rows = document.querySelectorAll('.stats-row');
-            const noResults = document.getElementById('no-results');
-            let visibleCount = 0;
-
             rows.forEach(row => {
                 const value = row.querySelector('.value-cell').textContent.toLowerCase();
-                if (value.includes(lowerQuery)) {
-                    row.classList.remove('hidden');
-                    visibleCount++;
-                } else {
-                    row.classList.add('hidden');
-                }
+                row.classList.toggle('hidden', !value.includes(lowerQuery));
             });
-
-            if (visibleCount === 0) {
-                noResults.classList.remove('hidden');
-            } else {
-                noResults.classList.add('hidden');
-            }
         }
     </script>
 </body>
@@ -285,10 +246,7 @@ const App: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    
-    // Set requested filename format: [FirstWord]_report_IpsExtractor_dd.mm.yyyy.html
     a.download = `${firstWord}_report_IpsExtractor_${fileSafeDate}.html`;
-    
     a.click();
     URL.revokeObjectURL(url);
   };
