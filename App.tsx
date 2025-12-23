@@ -335,7 +335,7 @@ const App: React.FC = () => {
       </div>
 
       <footer className="mt-24 pt-8 border-t border-slate-100 text-center text-slate-400 text-sm">
-        &copy; 2025 <b>By CMHW Team</b>, All rights reserved.
+        &copy; 2025 <b>By CMHW  Team</b>, All rights reserved.
       </footer>
     </div>
   );
