@@ -131,7 +131,7 @@ const App: React.FC = () => {
                     <textarea id="ip-search-box" placeholder="Paste multiple IPs to filter internal card contents..." oninput="onSearchChange(this.value)"
                         class="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl shadow-lg focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all resize-none h-20 text-sm font-mono"></textarea>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-300 absolute left-4 top-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                 </div>
                 <div id="search-info" class="text-center mt-3 text-[10px] text-slate-400 font-bold uppercase tracking-wider">Showing matching IPs in relevant drops</div>
@@ -171,25 +171,36 @@ const App: React.FC = () => {
         </div>
 
         <div id="stats-view" class="hidden">
-            <!-- Simplified stats table here -->
             <div class="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
-                <div class="p-6 bg-slate-50 border-b border-slate-100">
-                    <h2 class="text-2xl font-bold text-slate-800">Global Statistical Overview</h2>
+                <div class="p-6 bg-slate-50 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Global Statistical Overview</h2>
+                        <p class="text-xs text-slate-400 mt-0.5 font-bold uppercase tracking-wider">Aggregated IP frequencies</p>
+                    </div>
+                    <button 
+                        onclick="exportStatsCsv()"
+                        class="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100 no-print"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Export Excel (CSV)
+                    </button>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left">
+                    <table class="w-full text-left" id="report-stats-table">
                         <thead>
-                            <tr class="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest">
-                                <th class="px-6 py-4">IP Address</th>
-                                <th class="px-6 py-4 text-right">Count</th>
+                            <tr class="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-100">
+                                <th class="px-6 py-4">IP Address / Value</th>
+                                <th class="px-6 py-4 text-right">Occurrences</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
                             ${globalStats.sort((a,b) => b.count - a.count).map(item => `
-                            <tr>
-                                <td class="px-6 py-4 font-mono text-sm font-medium text-slate-700">${item.value}</td>
+                            <tr class="stats-data-row">
+                                <td class="px-6 py-4 font-mono text-sm font-medium text-slate-700 stats-val">${item.value}</td>
                                 <td class="px-6 py-4 text-right">
-                                    <span class="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg font-black text-xs border border-indigo-100">${item.count}</span>
+                                    <span class="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg font-black text-xs border border-indigo-100 stats-count">${item.count}</span>
                                 </td>
                             </tr>`).join('')}
                         </tbody>
@@ -244,6 +255,32 @@ const App: React.FC = () => {
             });
 
             document.getElementById('no-drops-message').classList.toggle('hidden', visibleCards > 0);
+        }
+
+        function exportStatsCsv() {
+            const rows = Array.from(document.querySelectorAll('.stats-data-row'));
+            if (rows.length === 0) return;
+            
+            // Define headers
+            const headers = ['IP Address', 'Occurrences'];
+            
+            // Start CSV with UTF-8 BOM and explicit delimiter for Excel compatibility
+            let csvContent = "\\uFEFFsep=,\\n" + headers.join(',') + "\\n";
+            
+            rows.forEach(row => {
+                const val = row.querySelector('.stats-val').textContent.trim().replace(/"/g, '""');
+                const count = row.querySelector('.stats-count').textContent.trim();
+                // Ensure IP and Count are in separate columns via comma
+                csvContent += \`"\${val}",\${count}\\n\`;
+            });
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'traffic_stats_export.csv';
+            a.click();
+            URL.revokeObjectURL(url);
         }
 
         function copyCardIps(btn) {

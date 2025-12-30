@@ -51,15 +51,17 @@ export const StatsTable: React.FC<StatsTableProps> = ({ stats }) => {
     if (filteredStats.length === 0) return;
     
     // Create CSV content compatible with Excel
-    const headers = ['IP Address/Value', 'Occurrences'];
-    const rows = filteredStats.map(s => `"${s.value}",${s.count}`);
-    const csvContent = [headers.join(','), ...rows].join('\n');
+    const headers = ['IP Address', 'Count'];
+    const rows = filteredStats.map(s => `"${s.value.replace(/"/g, '""')}",${s.count}`);
+    
+    // Use UTF-8 BOM and sep=, for maximum Excel compatibility across all locales
+    const csvContent = "\uFEFFsep=,\n" + headers.join(',') + '\n' + rows.join('\n');
     
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `ip_extractor_stats_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `ip_stats_export_${new Date().toISOString().slice(0, 10)}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
