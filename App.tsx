@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo } from 'react';
 import { Drop, GlobalStats, ViewMode } from './types.ts';
 import { FileUpload } from './components/FileUpload.tsx';
@@ -71,7 +72,6 @@ const App: React.FC = () => {
     if (drops.length === 0) return;
 
     const sortedStats = [...globalStats].sort((a, b) => b.count - a.count);
-    const maxCount = Math.max(...globalStats.map(s => s.count), 1);
     
     const baseName = fileName.replace(/\.[^/.]+$/, "");
     const firstWord = baseName.split(/[\s_-]/)[0] || 'Report';
@@ -93,7 +93,7 @@ const App: React.FC = () => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Report IP Extractor - Analytics</title>
+    <title>Report IP Extractor - ${firstWord}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
     <style>
@@ -116,7 +116,7 @@ const App: React.FC = () => {
             <h1 class="text-4xl font-extrabold text-slate-900 mb-2 tracking-tight">
                 Report IP <span class="text-indigo-600">Extractor</span>
             </h1>
-            <p class="text-slate-500 text-lg">Analyzed report from ${firstWord} ${formattedTimestamp}</p>
+            <p class="text-slate-500 text-lg">Analyzed report from ${firstWord} - Generated ${formattedTimestamp}</p>
         </header>
 
         <div class="flex flex-col md:flex-row items-center justify-center gap-4 mb-8 no-print">
@@ -135,7 +135,7 @@ const App: React.FC = () => {
         <div id="drops-view" class="animate-in fade-in duration-300">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 ${drops.map(drop => `
-                <div class="bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden flex flex-col h-full">
+                <div class="bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden flex flex-col h-full hover:shadow-lg transition-shadow">
                     <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center shrink-0">
                         <div class="flex items-center space-x-3">
                             <span class="bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-bold tracking-wider">DROP ${drop.id}</span>
@@ -143,7 +143,7 @@ const App: React.FC = () => {
                         </div>
                         <div class="text-slate-400 text-xs">${drop.uniqueValues.length} Items</div>
                     </div>
-                    <div class="p-4">
+                    <div class="p-4 flex-grow">
                         <div class="max-h-[210px] overflow-y-auto pr-1 custom-scrollbar">
                             <ul class="space-y-2">
                                 ${drop.uniqueValues.map(val => `
@@ -153,45 +153,95 @@ const App: React.FC = () => {
                                 </li>`).join('')}
                             </ul>
                         </div>
-                        ${drop.uniqueValues.length > 5 ? `
-                        <div class="mt-2 text-center">
-                            <p class="text-[10px] text-slate-400 font-medium uppercase tracking-tighter">Scroll for more</p>
-                        </div>` : ''}
                     </div>
                 </div>`).join('')}
             </div>
         </div>
 
         <div id="stats-view" class="hidden animate-in fade-in duration-300">
-            <div class="page-break"></div>
             <div class="bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden">
                 <div class="p-6 border-b border-slate-100 bg-slate-50">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <h2 class="text-xl font-bold text-slate-800">Global IP Statistics</h2>
-                        <div class="relative no-print">
-                            <input 
-                                type="text" 
-                                id="stats-search"
-                                placeholder="Search values..." 
-                                oninput="filterStats(this.value)"
-                                class="pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none w-full md:w-64 transition-all"
-                            />
+                    <div class="flex flex-col gap-6">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <h2 class="text-xl font-bold text-slate-800">Global IP Statistics</h2>
+                            <div class="flex items-center gap-2 no-print">
+                                <button 
+                                    onclick="exportStatsCsv()"
+                                    class="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 transition-all shadow-sm active:scale-95"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    Export Excel
+                                </button>
+                                <button 
+                                    id="copy-btn"
+                                    onclick="copyIps()"
+                                    class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-xs font-bold shadow-sm hover:border-indigo-300 hover:text-indigo-600 transition-all"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                                    </svg>
+                                    Copy IPs
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 no-print">
+                            <div class="md:col-span-2 space-y-1">
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 ml-1">Search IPs / Values</label>
+                                <div class="relative">
+                                    <textarea 
+                                        id="stats-search"
+                                        placeholder="Paste IPs to search..." 
+                                        oninput="applyAllFilters()"
+                                        rows="2"
+                                        class="pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none w-full transition-all resize-none text-sm font-mono"
+                                    ></textarea>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400 absolute left-3 top-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 ml-1">Exact Occurrences</label>
+                                <div class="relative">
+                                    <textarea 
+                                        id="occ-search"
+                                        placeholder="e.g. 1, 3, 5" 
+                                        oninput="applyAllFilters()"
+                                        rows="2"
+                                        class="pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none w-full transition-all resize-none text-sm font-mono"
+                                    ></textarea>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400 absolute left-3 top-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="results-count" class="text-xs text-slate-400 font-medium px-1 no-print">
+                            Showing ${sortedStats.length} items
                         </div>
                     </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left" id="stats-table">
                         <thead>
-                            <tr class="bg-slate-50 text-slate-500 text-xs font-bold uppercase tracking-wider">
+                            <tr class="bg-slate-50 text-slate-500 text-[10px] font-bold uppercase tracking-wider">
                                 <th class="px-6 py-4">IP Address / Value</th>
                                 <th class="px-6 py-4 text-right">Occurrences</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100" id="stats-body">
                             ${sortedStats.map(item => `
-                                <tr class="stats-row">
-                                    <td class="px-6 py-4 font-mono text-slate-700 font-medium value-cell">${item.value}</td>
-                                    <td class="px-6 py-4 text-right font-semibold text-indigo-600">${item.count}</td>
+                                <tr class="stats-row hover:bg-indigo-50/30 transition-colors" data-count="${item.count}">
+                                    <td class="px-6 py-4 font-mono text-slate-700 text-sm font-medium value-cell">${item.value}</td>
+                                    <td class="px-6 py-4 text-right">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 count-cell">
+                                            ${item.count}
+                                        </span>
+                                    </td>
                                 </tr>`).join('')}
                         </tbody>
                     </table>
@@ -230,13 +280,64 @@ const App: React.FC = () => {
             }
         }
 
-        function filterStats(query) {
-            const lowerQuery = query.toLowerCase();
+        function applyAllFilters() {
+            const ipQuery = document.getElementById('stats-search').value;
+            const occQuery = document.getElementById('occ-search').value;
+
+            const ipTerms = ipQuery.split(/[\\s\\n,]+/).map(t => t.trim().toLowerCase()).filter(t => t !== '');
+            const occTerms = occQuery.split(/[\\s\\n,]+/).map(t => parseInt(t.trim())).filter(t => !isNaN(t));
+            
             const rows = document.querySelectorAll('.stats-row');
+            let visibleCount = 0;
+            
             rows.forEach(row => {
                 const value = row.querySelector('.value-cell').textContent.toLowerCase();
-                row.classList.toggle('hidden', !value.includes(lowerQuery));
+                const count = parseInt(row.getAttribute('data-count'));
+                
+                const matchesIp = ipTerms.length === 0 || ipTerms.some(term => value.includes(term));
+                const matchesOcc = occTerms.length === 0 || occTerms.includes(count);
+                
+                const isVisible = matchesIp && matchesOcc;
+                row.classList.toggle('hidden', !isVisible);
+                if (isVisible) visibleCount++;
             });
+
+            document.getElementById('results-count').innerText = 'Showing ' + visibleCount + ' items';
+        }
+
+        function copyIps() {
+            const rows = Array.from(document.querySelectorAll('.stats-row:not(.hidden)'));
+            const ips = rows.map(row => row.querySelector('.value-cell').textContent.trim()).join('\\n');
+            navigator.clipboard.writeText(ips).then(() => {
+                const btn = document.getElementById('copy-btn');
+                const originalHtml = btn.innerHTML;
+                btn.innerText = 'Copied!';
+                btn.classList.add('bg-green-50', 'text-green-600', 'border-green-200');
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                    btn.classList.remove('bg-green-50', 'text-green-600', 'border-green-200');
+                }, 2000);
+            });
+        }
+
+        function exportStatsCsv() {
+            const rows = Array.from(document.querySelectorAll('.stats-row:not(.hidden)'));
+            if (rows.length === 0) return;
+            
+            let csv = 'IP Address/Value,Occurrences\\n';
+            rows.forEach(row => {
+                const val = row.querySelector('.value-cell').textContent.trim();
+                const count = row.querySelector('.count-cell').textContent.trim();
+                csv += \`"\${val}",\${count}\\n\`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ip_extractor_stats_export.csv';
+            a.click();
+            URL.revokeObjectURL(url);
         }
     </script>
 </body>
@@ -246,7 +347,7 @@ const App: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${firstWord}_report_IpsExtractor_${fileSafeDate}.html`;
+    a.download = `${firstWord}_report_${fileSafeDate}.html`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -299,7 +400,7 @@ const App: React.FC = () => {
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
-                  Download as HTML
+                  Download Analysis (.html)
                 </button>
               </div>
             </div>
@@ -330,12 +431,13 @@ const App: React.FC = () => {
               </svg>
             </div>
             <h3 className="text-xl font-medium text-slate-400">Waiting for data...</h3>
+            <p className="text-slate-400 text-sm mt-2">Upload your log file to begin analysis</p>
           </div>
         )}
       </div>
 
       <footer className="mt-24 pt-8 border-t border-slate-100 text-center text-slate-400 text-sm">
-        &copy; 2025 <b>By CMHW  Team</b>, All rights reserved.
+        &copy; 2025 <b>By CMHW Team</b>, All rights reserved.
       </footer>
     </div>
   );
